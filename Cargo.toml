@@ -15,8 +15,8 @@ license = "MIT"
 clap = { version = "4.4", features = ["derive"] } # Command-line argument parser.
 zstd = "0.13"                                     # Zstandard compression library.
 tar = "0.4"                                       # Tar archiving library.
-thiserror = "1.0"                                 # Derive macro for custom error types.
-env_logger = "0.10"                               # Logging implementation.
+thiserror = "2.0"                                 # Derive macro for custom error types.
+env_logger = "0.11"                               # Logging implementation.
 log = "0.4"                                       # Logging facade.
 
 # The `[dev-dependencies]` section lists crates used only for development and testing.

@@ -1,0 +1,21 @@
+# Declare files that will be checked out with a specific character encoding.
+*.md linguist-vendored
+*.txt text eol=lf
+*.toml text eol=lf
+*.rs text eol=lf
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.lock binary
+
+# Normalize line endings
+* text=auto
+
+# Treat .toml files as TOML language (useful for syntax highlighting)
+*.toml linguist-language=TOML
+
+# Exclude Cargo.lock from diffs
+Cargo.lock -diff

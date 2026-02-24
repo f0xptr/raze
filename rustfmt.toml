@@ -1,0 +1,7 @@
+# Configuration for rustfmt on stable toolchain.
+max_width = 100
+edition = "2021"
+tab_spaces = 4
+fn_params_layout = "Tall"
+match_block_trailing_comma = true
+hard_tabs = false

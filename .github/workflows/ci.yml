@@ -1,0 +1,72 @@
+# Workflow for Rust Continuous Integration
+# This workflow is triggered on pushes to main/master branches and pull requests
+# targeting those branches. It builds, tests, and lints the Rust project.
+name: Rust CI
+
+# Configure when this workflow runs
+on:
+  push:
+    branches:
+      - main
+      - master # Also trigger on 'master' for older repositories or projects
+  pull_request:
+    branches:
+      - main
+      - master # Also trigger on 'master' for older repositories or projects
+
+# Define environment variables available to all jobs in this workflow
+env:
+  CARGO_TERM_COLOR: always # Always show colored output from Cargo commands
+
+# Define the jobs that make up this workflow
+jobs:
+  build_and_test:
+    name: Build and Test # Name of the job
+    runs-on: ubuntu-latest # Specifies the runner environment for this job
+
+    steps:
+      # Step 1: Checkout the repository code
+      # This step checks out your repository under $GITHUB_WORKSPACE,
+      # so your workflow can access it.
+      - uses: actions/checkout@v4
+
+      # Step 2: Install Rust toolchain
+      # Installs a stable Rust toolchain and specified components (rustfmt, clippy).
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy # Install rustfmt for formatting checks and clippy for linting
+
+      # Step 3: Cache Cargo dependencies
+      # Caches Cargo's build artifacts and downloaded dependencies to speed up subsequent runs.
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: | # Paths to cache
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }} # Cache key based on OS and Cargo.lock
+          restore-keys: | # Keys to try restoring if the primary key misses
+            ${{ runner.os }}-cargo-
+
+      # Step 4: Check code formatting with rustfmt
+      # Ensures the code adheres to the project's formatting standards.
+      - name: Check formatting
+        run: cargo fmt --check # --check flag ensures it only checks, not modifies
+
+      # Step 5: Run clippy linter
+      # Static analysis tool to catch common mistakes and improve Rust code.
+      - name: Run clippy linter
+        run: cargo clippy -- -D warnings # -D warnings treats all clippy lints as errors
+
+      # Step 6: Build the project
+      # Compiles the Rust project.
+      - name: Build
+        run: cargo build --verbose # --verbose provides more detailed output
+
+      # Step 7: Run tests
+      # Executes all unit and integration tests for the project.
+      - name: Run tests
+        run: cargo test --verbose # --verbose provides more detailed output

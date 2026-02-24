@@ -1,0 +1,37 @@
+# Configuration for the Raze repository
+# This file defines general settings and labels for the repository.
+
+# List of labels to ensure exist in the repository
+labels:
+  - name: bug
+    color: d73a4a
+    description: Something isn't working
+  - name: documentation
+    color: 0075ca
+    description: Improvements or additions to documentation
+  - name: feature
+    color: a2eeed
+    description: New feature or request
+  - name: enhancement
+    color: 84b6eb
+    description: General improvements or optimizations
+  - name: refactor
+    color: fef2c0
+    description: A change that restructures existing code without changing its external behavior
+  - name: performance
+    color: d876e3
+    description: A change that improves performance
+  - name: question
+    color: d876e3
+    description: Further information is requested
+  - name: help wanted
+    color: 008672
+    description: Extra attention is needed
+  - name: good first issue
+    color: 7057ff
+    description: Good for new contributors
+
+# Other potential settings (uncomment and modify as needed)
+# default_branch: main
+# contributing_guidelines_url: "https://github.com/f0xptr/raze/blob/main/CONTRIBUTING.md"
+# code_of_conduct_url: "https://github.com/f0xptr/raze/blob/main/CODE_OF_CONDUCT.md"

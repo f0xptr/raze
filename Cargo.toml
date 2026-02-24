@@ -1,0 +1,37 @@
+# Configuration for the Raze project, managed by Cargo.
+
+# The `[package]` section defines metadata about your package.
+[package]
+name = "raze"
+version = "1.0.0"
+edition = "2021"
+authors = ["f0xptr <f0xptr@outlook.com>"]
+description = "A blazingly fast, lightweight, and modular archiving CLI tool."
+license = "MIT"
+
+# The `[dependencies]` section lists the external crates that your package relies on.
+# These are required for both building and running the application.
+[dependencies]
+clap = { version = "4.4", features = ["derive"] } # Command-line argument parser.
+zstd = "0.13"                                     # Zstandard compression library.
+tar = "0.4"                                       # Tar archiving library.
+thiserror = "1.0"                                 # Derive macro for custom error types.
+env_logger = "0.10"                               # Logging implementation.
+log = "0.4"                                       # Logging facade.
+
+# The `[dev-dependencies]` section lists crates used only for development and testing.
+# These are not included in the final binary.
+[dev-dependencies]
+tempfile = "3.6" # Utility for creating temporary files and directories in tests.
+
+# The `[lib]` section configures the library target for this package.
+# This makes the core functionalities available for other crates to use.
+[lib]
+name = "raze"
+path = "src/lib.rs"
+
+# The `[[bin]]` section configures the binary executable target for this package.
+# This defines the main CLI application.
+[[bin]]
+name = "raze"
+path = "src/main.rs"

@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo" # Look for Cargo dependencies
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    # Allow up to 10 pull requests for Cargo updates
+    open-pull-requests-limit: 10
+    # Group all Cargo updates into a single PR
+    groups:
+      cargo-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: "github-actions" # Look for GitHub Actions dependencies
+    directory: "/" # Location of workflow files
+    schedule:
+      interval: "weekly"
+    # Allow up to 5 pull requests for GitHub Actions updates
+    open-pull-requests-limit: 5
+    # Group all GitHub Actions updates into a single PR
+    groups:
+      github-actions-dependencies:
+        patterns: ["*"]

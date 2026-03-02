@@ -11,4 +11,4 @@ This module consolidates a collection of utility functions, custom error definit
 The `utils` module is organized into the following sub-modules:
 
 *   `errors`: This sub-module is responsible for defining a comprehensive set of custom error types, encapsulated within `RazeError`. These errors are utilized for consistent error reporting across the entire application.
-*   `logger`: This sub-module manages the initialization and configuration of the application's logging system, enabling configurable diagnostic output for debugging and monitoring purposes.
+*   `security`: This sub-module is responsible for the encryption and decryption logic.

@@ -8,51 +8,21 @@
 //! handling path validation, archive creation, and error management.
 
 use crate::utils::errors::RazeError;
+use crate::utils::security;
 use log::info;
 use std::fs::File;
+use std::io::{Seek, SeekFrom};
 use std::path::Path;
 use tar::Builder;
 use zstd::Encoder;
 
 /// Compresses a given file or directory into a `.rz` archive using Zstandard.
-///
-/// This function takes a source path (either a file or a directory) and an output
-/// path for the resulting `.rz` archive. It uses a `tar` builder to create an
-/// archive stream, which is then compressed using the Zstandard algorithm.
-///
-/// # Arguments
-///
-/// * `source` - A path-like object (`impl AsRef<Path>`) representing the file
-///   or directory to be compressed. The contents of this path will be added
-///   to the archive.
-/// * `output` - A path-like object (`impl AsRef<Path>`) specifying the full path
-///   (including the filename and `.rz` extension) where the compressed archive
-///   will be saved.
-///
-/// # Errors
-///
-/// This function can return a `RazeError` in the following cases:
-/// - `RazeError::NotFound`: If the `source` path does not exist.
-/// - `RazeError::Io`: If any I/O operation (e.g., file creation, reading, writing) fails.
-/// - `RazeError::CompressionError`: If an error occurs during the Zstandard compression
-///   process or while finalizing the tar archive.
-///
-/// # Examples
-///
-/// ```no_run
-/// use raze::core::compress;
-/// use std::path::Path;
-///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     // Compress a single file
-///     compress::pack("my_document.txt", "my_document.txt.rz")?;
-///
-///     // Compress an entire directory
-///     compress::pack("my_project_folder", "my_project_folder.rz")?;
-///     Ok(())
-/// }
-/// ```
-pub fn pack(source: impl AsRef<Path>, output: impl AsRef<Path>) -> Result<(), RazeError> {
+/// Optionally encrypts the archive if a password is provided.
+pub fn pack(
+    source: impl AsRef<Path>,
+    output: impl AsRef<Path>,
+    password: Option<&str>,
+) -> Result<(), RazeError> {
     let source_path = source.as_ref();
     let output_path = output.as_ref();
 
@@ -61,24 +31,69 @@ pub fn pack(source: impl AsRef<Path>, output: impl AsRef<Path>) -> Result<(), Ra
     }
 
     info!(
-        "Starting compression of '{}' into '{}'...",
+        "Starting compression of '{}' into '{}'{}...",
         source_path.display(),
-        output_path.display()
+        output_path.display(),
+        if password.is_some() {
+            " with encryption"
+        } else {
+            ""
+        }
     );
 
-    let output_file = File::create(output_path)?;
-    // Initialize the Zstandard encoder with a balanced compression level (3).
-    let encoder = Encoder::new(output_file, 3)
-        .map_err(|e| RazeError::CompressionError(e.to_string()))?
-        .auto_finish(); // Automatically finish the Zstd stream on drop.
+    // If we have a password, we'll compress into a buffer first, then encrypt that buffer into the final file.
+    // For simplicity and to avoid large memory usage for very large files, we could use a temp file.
+    // However, for "super complex security", we might want to avoid writing unencrypted data to disk.
+    // Let's use a streaming approach.
 
-    // Wrap the Zstd encoder in a Tar builder to create the archive structure.
-    let mut tar_builder = Builder::new(encoder);
+    let final_output = File::create(output_path)?;
 
+    if let Some(pwd) = password {
+        // We need to stream Tar -> Zstd -> Encrypt -> File
+        // We can use a pipe-like structure or just a simple intermediary buffer if we don't want to overcomplicate.
+        // Actually, we can implement a custom Writer that encrypts on the fly,
+        // but our encrypt_stream takes a Reader.
+
+        // Let's use a temporary file for the compressed but unencrypted data.
+        // This is a trade-off. To be even more secure, we'd do it all in memory or with a custom writer.
+        let mut temp_file = tempfile::tempfile()?;
+
+        {
+            let encoder = Encoder::new(&temp_file, 3)
+                .map_err(|e| RazeError::CompressionError(e.to_string()))?
+                .auto_finish();
+
+            let mut tar_builder = Builder::new(encoder);
+            append_to_tar(&mut tar_builder, source_path)?;
+            tar_builder.into_inner().map_err(|e| {
+                RazeError::CompressionError(format!("Failed to finish archive: {}", e))
+            })?;
+        }
+
+        // Now encrypt from temp_file to final_output
+        temp_file.seek(SeekFrom::Start(0))?;
+        security::encrypt_stream(temp_file, final_output, pwd)?;
+    } else {
+        let encoder = Encoder::new(final_output, 3)
+            .map_err(|e| RazeError::CompressionError(e.to_string()))?
+            .auto_finish();
+
+        let mut tar_builder = Builder::new(encoder);
+        append_to_tar(&mut tar_builder, source_path)?;
+        tar_builder
+            .into_inner()
+            .map_err(|e| RazeError::CompressionError(format!("Failed to finish archive: {}", e)))?;
+    }
+
+    info!("Successfully created archive: {}", output_path.display());
+    Ok(())
+}
+
+fn append_to_tar<W: std::io::Write>(
+    tar_builder: &mut Builder<W>,
+    source_path: &Path,
+) -> Result<(), RazeError> {
     if source_path.is_dir() {
-        // If the source is a directory, append all its contents recursively.
-        // The `file_name()` is used to ensure the directory itself is the root
-        // within the archive, rather than its parent path.
         tar_builder.append_dir_all(
             source_path
                 .file_name()
@@ -86,8 +101,6 @@ pub fn pack(source: impl AsRef<Path>, output: impl AsRef<Path>) -> Result<(), Ra
             source_path,
         )?;
     } else {
-        // If the source is a file, open it and append it to the archive.
-        // The `file_name()` is used to determine the name of the file within the archive.
         let mut file = File::open(source_path)?;
         tar_builder.append_file(
             source_path
@@ -96,12 +109,5 @@ pub fn pack(source: impl AsRef<Path>, output: impl AsRef<Path>) -> Result<(), Ra
             &mut file,
         )?;
     }
-
-    // Ensure all buffered data is flushed and the archive is properly closed.
-    tar_builder
-        .into_inner()
-        .map_err(|e| RazeError::CompressionError(format!("Failed to finish archive: {}", e)))?;
-
-    info!("Successfully created archive: {}", output_path.display());
     Ok(())
 }

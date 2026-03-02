@@ -36,8 +36,8 @@ This enum encapsulates a variety of failure modes, offering specific error varia
 
     This error is returned when issues emerge during the compression of data into an `.rz` archive, for example, if the Zstandard encoder encounters an unexpected state.
 
-*   `DecompressionError(String)`
+*   `CryptoError(String)`
 
-    Indicates an error specific to the decompression process.
+    Indicates a cryptographic error.
 
-    This error occurs when problems are encountered during the extraction of data from an `.rz` archive, such as corrupted archive data or issues with the Zstandard decoder.
+    This error is returned when issues emerge during the encryption or decryption of data, for example, if the key derivation fails or if the authentication tag is invalid.

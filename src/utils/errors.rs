@@ -47,4 +47,8 @@ pub enum RazeError {
     /// issues with the Zstandard decoder.
     #[error("Decompression error: {0}")]
     DecompressionError(String),
+
+    /// Indicates a cryptographic error.
+    #[error("Cryptographic error: {0}")]
+    CryptoError(String),
 }

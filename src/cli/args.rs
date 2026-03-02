@@ -7,23 +7,38 @@
 //! The primary structure, `RazeArgs`, encapsulates all possible subcommands and global flags,
 //! directing the application's flow based on the user's command-line invocation.
 
-use super::commands::Commands;
-use clap::Parser;
+use clap::{ArgGroup, Parser};
 
-/// `Raze`: A blazingly fast and lightweight archiving utility.
-///
-/// This structure represents the main entry point for parsing command-line arguments
-/// provided to the Raze CLI application. It utilizes `clap`'s `Parser` derive
-/// to automatically generate argument parsing logic, help messages, and version information.
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about = "Raze: A blazingly fast and lightweight archiving utility with secure encryption.", long_about = None)]
 #[command(propagate_version = true)]
+#[command(group(ArgGroup::new("mode").required(true).args(&["pack", "unpack"])))]
 pub struct RazeArgs {
-    /// The subcommand to execute (e.g., `pack` for compression, `unpack` for decompression).
-    ///
-    /// This field determines the primary operation Raze will perform. Each subcommand
-    /// (`Commands::Pack`, `Commands::Unpack`) is associated with its own set of arguments
-    /// and specific behavior, as defined in the `commands` module.
-    #[command(subcommand)]
-    pub command: Commands,
+    /// Activate packing mode.
+    #[arg(long, help = "Activate packing mode.")]
+    pub pack: bool,
+
+    /// Activate unpacking mode.
+    #[arg(long, help = "Activate unpacking mode.")]
+    pub unpack: bool,
+
+    /// (Required for packing) The path to the source file or directory to be compressed.
+    #[arg(short, long, value_name = "SOURCE", required_if_eq("pack", "true"))]
+    pub source: Option<String>,
+
+    /// (Required for packing) The name or path of the output .rz archive file.
+    #[arg(short, long, value_name = "OUTPUT", required_if_eq("pack", "true"))]
+    pub output: Option<String>,
+
+    /// (Required for unpacking) The path to the .rz archive file to be decompressed.
+    #[arg(short, long, value_name = "ARCHIVE", required_if_eq("unpack", "true"))]
+    pub archive: Option<String>,
+
+    /// (Optional for unpacking) The destination directory for extraction. Defaults to the current directory.
+    #[arg(short, long, value_name = "DESTINATION")]
+    pub destination: Option<String>,
+
+    /// (Optional) Password for encryption or decryption.
+    #[arg(short, long, value_name = "PASSWORD")]
+    pub password: Option<String>,
 }

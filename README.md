@@ -6,8 +6,9 @@ Raze is a blazingly fast and lightweight archiving utility implemented in Rust. 
 
 -   **High Performance**: Utilizes Zstandard (Zstd) for superior compression and decompression speeds.
 -   **Efficient Archiving**: Employs the Tar format for bundling multiple files and directories into a single stream.
--   **Simple CLI**: Offers straightforward `pack` and `unpack` commands.
+-   **Simple and Unified CLI**: Offers a straightforward and consolidated command-line interface.
 -   **Robust Error Handling**: Custom error types ensure clear and descriptive feedback on operational failures.
+-   **State-of-the-Art Security**: Optional password-based encryption using AES-256-GCM with a key derived via Argon2id, providing strong security for your archives.
 
 ## Installation
 
@@ -28,13 +29,24 @@ This will build the `raze` executable in the `target/release/` directory. You ca
 To compress a file or directory:
 
 ```bash
-raze pack -s <source_path> -o <output_archive.rz>
+raze --pack -s <source_path> -o <output_archive.rz>
 ```
 
 Example:
 ```bash
-raze pack -s my_folder -o my_archive.rz
-raze pack -s my_file.txt -o my_file.txt.rz
+raze --pack -s my_folder -o my_archive.rz
+raze --pack -s my_file.txt -o my_file.txt.rz
+```
+
+To compress with a password:
+
+```bash
+raze --pack -s <source_path> -o <output_archive.rz> -p <password>
+```
+
+Example:
+```bash
+raze --pack -s my_folder -o my_archive.rz -p "my-secret-password"
 ```
 
 ### Unpacking (Decompression)
@@ -42,14 +54,25 @@ raze pack -s my_file.txt -o my_file.txt.rz
 To decompress an `.rz` archive:
 
 ```bash
-raze unpack -a <archive.rz> -d <destination_directory>
+raze --unpack -a <archive.rz> -d <destination_directory>
 ```
 
 Example:
 ```bash
-raze unpack -a my_archive.rz -d extracted_files
+raze --unpack -a my_archive.rz -d extracted_files
 ```
 If `-d` is not specified, it will unpack to the current directory.
+
+To decompress an encrypted archive:
+
+```bash
+raze --unpack -a <archive.rz> -d <destination_directory> -p <password>
+```
+
+Example:
+```bash
+raze --unpack -a my_archive.rz -d extracted_files -p "my-secret-password"
+```
 
 ## Contributing
 

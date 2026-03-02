@@ -12,7 +12,6 @@
 mod cli; // Declares the `cli` module, containing argument parsing logic.
 
 use self::cli::args::RazeArgs;
-use self::cli::commands::Commands;
 use clap::Parser;
 use log::error;
 use raze::core::{compress, decompress};
@@ -60,22 +59,36 @@ fn main() {
 /// Returns `Ok(())` if the command executes successfully, or a `RazeError`
 /// if any part of the archiving or compression/decompression process fails.
 fn run(args: RazeArgs) -> Result<(), RazeError> {
-    match args.command {
-        Commands::Pack { source, output } => {
-            // Handle the `pack` subcommand: compress a source into an archive.
-            let mut output_path = PathBuf::from(output);
-            // Ensure the output file has the `.rz` extension for consistency.
-            if output_path.extension().is_none() || output_path.extension().unwrap() != "rz" {
-                output_path.set_extension("rz");
-            }
-            compress::pack(source, output_path)
-        },
-        Commands::Unpack {
-            archive,
-            destination,
-        } => {
-            // Handle the `unpack` subcommand: decompress an archive to a destination.
-            decompress::unpack(archive, destination)
-        },
+    if args.pack {
+        let source = args.source.ok_or_else(|| {
+            RazeError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Missing source path for packing.",
+            ))
+        })?;
+        let output = args.output.ok_or_else(|| {
+            RazeError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Missing output path for packing.",
+            ))
+        })?;
+
+        let mut output_path = PathBuf::from(output);
+        if output_path.extension().is_none() || output_path.extension().unwrap() != "rz" {
+            output_path.set_extension("rz");
+        }
+        compress::pack(source, output_path, args.password.as_deref())
+    } else if args.unpack {
+        let archive = args.archive.ok_or_else(|| {
+            RazeError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Missing archive path for unpacking.",
+            ))
+        })?;
+        let destination = args.destination.unwrap_or_else(|| ".".to_string());
+
+        decompress::unpack(archive, destination, args.password.as_deref())
+    } else {
+        unreachable!();
     }
 }

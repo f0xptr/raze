@@ -8,4 +8,3 @@
 //! from the specific command implementations (`commands.rs`), ensuring a clean
 //! and maintainable interface for users.
 pub mod args;
-pub mod commands;

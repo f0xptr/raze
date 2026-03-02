@@ -6,7 +6,7 @@ This document provides an overview of `src/main.rs`, the main entry point for th
 
 The `main.rs` file serves as the primary binary entry point for the Raze archiving tool. Raze offers a fast and lightweight CLI experience for creating and extracting `.rz` archives. It combines the `tar` archiving format with the `Zstandard` compression algorithm, ensuring efficient and high-performance file management.
 
-The CLI is responsible for parsing user commands and delegating them to the underlying Raze library (`raze::core`) for execution. Global error handling is implemented to ensure a graceful exit in case of any operational failures.
+The CLI is responsible for parsing user commands and delegating them to the underlying Raze library (`raze::core`) for execution. It supports optional password-based encryption for `pack` and `unpack` commands. Global error handling is implemented to ensure a graceful exit in case of any operational failures.
 
 ## Functions
 
@@ -23,10 +23,10 @@ This function does not explicitly panic. Unhandled errors from internal operatio
 
 Executes the main application logic based on the parsed command-line arguments.
 
-This function acts as the central dispatcher for Raze's operations. It matches the provided subcommand (e.g., `Pack` or `Unpack`) and invokes the corresponding function from the `raze::core` library to perform the archiving task.
+This function acts as the central dispatcher for Raze's operations. It checks for the `--pack` or `--unpack` flags and calls the corresponding function from the `raze::core` library to perform the archiving task.
 
 **Arguments:**
-* `args`: A `RazeArgs` struct containing the parsed command and its associated arguments from the command line.
+* `args`: A `RazeArgs` struct containing the parsed flags and options from the command line.
 
 **Returns:**
 Returns `Ok(())` if the command executes successfully, or a `RazeError` if any part of the archiving, compression, or decompression process encounters a failure.

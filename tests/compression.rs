@@ -38,11 +38,11 @@ fn test_pack_unpack_flow() {
 
     // 2. Pack: Compress the directory
     let archive_path = dir.path().join("archive.rz");
-    compress::pack(dir.path(), &archive_path).expect("Failed to pack directory");
+    compress::pack(dir.path(), &archive_path, None).expect("Failed to pack directory");
 
     // 3. Unpack: Decompress the archive to a new directory
     let unpack_dir = tempdir().expect("Failed to create temporary unpack directory");
-    decompress::unpack(&archive_path, unpack_dir.path()).expect("Failed to unpack archive");
+    decompress::unpack(&archive_path, unpack_dir.path(), None).expect("Failed to unpack archive");
 
     // 4. Verify: Check if the unpacked file exists and its content is correct
     // The unpacked directory structure preserves the original top-level directory name.
@@ -89,11 +89,11 @@ fn test_pack_unpack_single_file_flow() {
 
     // 2. Pack: Compress the file
     let archive_path = dir.path().join("archive.rz");
-    compress::pack(&file_path, &archive_path).expect("Failed to pack single file");
+    compress::pack(&file_path, &archive_path, None).expect("Failed to pack single file");
 
     // 3. Unpack: Decompress the archive to a new directory
     let unpack_dir = tempdir().expect("Failed to create temporary unpack directory");
-    decompress::unpack(&archive_path, unpack_dir.path()).expect("Failed to unpack archive");
+    decompress::unpack(&archive_path, unpack_dir.path(), None).expect("Failed to unpack archive");
 
     // 4. Verify: Check if the unpacked file exists and its content is correct
     // When a single file is packed, it's extracted directly into the destination.
@@ -107,4 +107,33 @@ fn test_pack_unpack_single_file_flow() {
     assert_eq!(content.trim(), "Hello, Raze!");
 
     // 5. Teardown: tempdir will automatically clean up the directories
+}
+
+#[test]
+fn test_encryption_flow() {
+    // 1. Setup
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("secret.txt");
+    let mut file = File::create(&file_path).unwrap();
+    writeln!(file, "This is a secret message.").unwrap();
+    let archive_path = dir.path().join("secret.rz");
+    let unpack_dir = tempdir().unwrap();
+    let password = "supersecretpassword";
+
+    // 2. Pack with password
+    compress::pack(&file_path, &archive_path, Some(password)).unwrap();
+
+    // 3. Unpack with correct password
+    decompress::unpack(&archive_path, unpack_dir.path(), Some(password)).unwrap();
+
+    // 4. Verify
+    let unpacked_file_path = unpack_dir.path().join("secret.txt");
+    assert!(unpacked_file_path.exists());
+    let content = fs::read_to_string(unpacked_file_path).unwrap();
+    assert_eq!(content.trim(), "This is a secret message.");
+
+    // 5. Attempt to unpack with wrong password
+    let unpack_dir_fail = tempdir().unwrap();
+    let result = decompress::unpack(&archive_path, unpack_dir_fail.path(), Some("wrongpassword"));
+    assert!(result.is_err());
 }

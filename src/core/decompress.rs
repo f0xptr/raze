@@ -9,55 +9,21 @@
 //! including archive validation, directory creation, and error handling.
 
 use crate::utils::errors::RazeError;
+use crate::utils::security;
 use log::info;
 use std::fs;
 use std::fs::File;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 use tar::Archive;
 use zstd::Decoder;
 
 /// Extracts a `.rz` archive into a specified destination directory.
-///
-/// This function takes the path to an existing `.rz` archive and a target
-/// destination directory. It first decompresses the archive using Zstandard
-/// and then uses `tar` to extract all contents to the specified location.
-///
-/// If the destination directory does not exist, it will be created.
-///
-/// # Arguments
-///
-/// * `archive_path` - A path-like object (`impl AsRef<Path>`) representing
-///   the `.rz` archive file to be decompressed.
-/// * `destination` - A path-like object (`impl AsRef<Path>`) specifying
-///   the directory where the archive's contents will be extracted.
-///
-/// # Errors
-///
-/// This function can return a `RazeError` in the following cases:
-/// - `RazeError::NotFound`: If the `archive_path` does not exist.
-/// - `RazeError::Io`: If any I/O operation (e.g., file opening, directory creation,
-///   writing extracted files) fails.
-/// - `RazeError::DecompressionError`: If an error occurs during the Zstandard
-///   decompression process.
-///
-/// # Examples
-///
-/// ```no_run
-/// use raze::core::decompress;
-/// use std::path::Path;
-///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     // Decompress an archive into a specific directory
-///     decompress::unpack("my_archive.rz", "extracted_files")?;
-///
-///     // Decompress an archive into the current directory
-///     decompress::unpack("another_archive.rz", ".")?;
-///     Ok(())
-/// }
-/// ```
+/// Optionally decrypts the archive if a password is provided.
 pub fn unpack(
     archive_path: impl AsRef<Path>,
     destination: impl AsRef<Path>,
+    password: Option<&str>,
 ) -> Result<(), RazeError> {
     let archive_path = archive_path.as_ref();
     if !archive_path.exists() {
@@ -65,25 +31,54 @@ pub fn unpack(
     }
 
     let destination_path = destination.as_ref();
-    // Ensure the destination directory exists; create it if not.
     fs::create_dir_all(destination_path)?;
 
-    let archive_file = File::open(archive_path)?;
-    // Initialize the Zstandard decoder to read the compressed stream.
-    let decoder =
-        Decoder::new(archive_file).map_err(|e| RazeError::DecompressionError(e.to_string()))?;
+    let mut archive_file = File::open(archive_path)?;
 
-    // Wrap the decoder in a Tar archive parser to extract contents.
-    let mut tar_archive = Archive::new(decoder);
+    // Check if the file is encrypted by reading the magic header
+    let mut magic = [0u8; 4];
+    let is_encrypted = if archive_file.read_exact(&mut magic).is_ok() {
+        magic == *b"RZCR"
+    } else {
+        false
+    };
+    archive_file.seek(SeekFrom::Start(0))?;
 
-    info!(
-        "Extracting '{}' to '{}'...",
-        archive_path.display(),
-        destination_path.display()
-    );
+    if is_encrypted {
+        let pwd = password.ok_or_else(|| {
+            RazeError::CryptoError("Archive is encrypted but no password was provided".to_string())
+        })?;
 
-    // Unpack all contents into the specified destination directory.
-    tar_archive.unpack(destination_path)?;
+        // Decrypt to a temporary file
+        let mut temp_file = tempfile::tempfile()?;
+        security::decrypt_stream(&archive_file, &mut temp_file, pwd)?;
+
+        temp_file.seek(SeekFrom::Start(0))?;
+        let decoder =
+            Decoder::new(temp_file).map_err(|e| RazeError::DecompressionError(e.to_string()))?;
+        let mut tar_archive = Archive::new(decoder);
+
+        info!(
+            "Extracting encrypted archive '{}' to '{}'...",
+            archive_path.display(),
+            destination_path.display()
+        );
+        tar_archive.unpack(destination_path)?;
+    } else {
+        if password.is_some() {
+            info!("Warning: Password provided but archive does not appear to be encrypted.");
+        }
+        let decoder =
+            Decoder::new(archive_file).map_err(|e| RazeError::DecompressionError(e.to_string()))?;
+        let mut tar_archive = Archive::new(decoder);
+
+        info!(
+            "Extracting '{}' to '{}'...",
+            archive_path.display(),
+            destination_path.display()
+        );
+        tar_archive.unpack(destination_path)?;
+    }
 
     info!(
         "Successfully extracted archive to: {}",

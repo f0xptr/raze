@@ -14,6 +14,7 @@ The design philosophy emphasizes efficiency and simplicity, aiming to provide a 
 *   **Efficient Archiving**: Uses the Tar format to bundle multiple files and directories into a single stream.
 *   **Simple API**: Offers straightforward functions for `pack`ing (compressing) and `unpack`ing (decompressing) archives.
 *   **Error Handling**: Custom error types are implemented to provide clear and descriptive feedback for operational failures.
+*   **Secure Encryption**: Optional password-based encryption using AES-256-GCM with a key derived via Argon2id.
 
 ## Structure
 
@@ -25,6 +26,7 @@ The library is organized into the following key modules:
 *   `utils`: Provides essential utility functions, error definitions, and logging setup.
     *   `utils::errors`: Defines the custom error types (`RazeError`) specific to the library.
     *   `utils::logger`: Manages the initialization and configuration of the logging environment.
+    *   `utils::security`: Implements the encryption and decryption logic.
 
 ## Usage
 
@@ -32,7 +34,7 @@ To integrate Raze as a library into your project, add it as a dependency in your
 
 ```toml
 [dependencies]
-raze = "1.0.0" # Or the latest version
+raze = "1.1.0" # Or the latest version
 ```
 
 Subsequently, you can import and utilize its functions within your Rust code:
@@ -43,10 +45,16 @@ use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example: Compress a file
-    compress::pack("source_file.txt", "archive.rz")?;
+    compress::pack("source_file.txt", "archive.rz", None)?;
+
+    // Example: Compress a file with a password
+    compress::pack("source_file.txt", "archive.rz", Some("password"))?;
 
     // Example: Decompress an archive
-    decompress::unpack("archive.rz", "destination_directory")?;
+    decompress::unpack("archive.rz", "destination_directory", None)?;
+
+    // Example: Decompress an encrypted archive
+    decompress::unpack("archive.rz", "destination_directory", Some("password"))?;
     Ok(())
 }
 ```

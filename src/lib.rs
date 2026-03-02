@@ -36,7 +36,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! raze = "1.0.0" # Or the latest version
+//! raze = "1.1.0" # Or the latest version
 //! ```
 //!
 //! Then, you can import and use its functions:
@@ -46,11 +46,11 @@
 //! use std::path::Path;
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     // Example: Compress a file
-//!     compress::pack("source_file.txt", "archive.rz")?;
+//!     // Example: Compress a file without a password
+//!     compress::pack("source_file.txt", "archive.rz", None)?;
 //!
-//!     // Example: Decompress an archive
-//!     decompress::unpack("archive.rz", "destination_directory")?;
+//!     // Example: Decompress an archive without a password
+//!     decompress::unpack("archive.rz", "destination_directory", None)?;
 //!     Ok(())
 //! }
 //! ```

@@ -3,7 +3,7 @@
 # The `[package]` section defines metadata about your package.
 [package]
 name = "raze"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 authors = ["f0xptr <f0xptr@outlook.com>"]
 description = "A blazingly fast, lightweight, and modular archiving CLI tool."
@@ -18,6 +18,11 @@ tar = "0.4"                                       # Tar archiving library.
 thiserror = "2.0"                                 # Derive macro for custom error types.
 env_logger = "0.11"                               # Logging implementation.
 log = "0.4"                                       # Logging facade.
+aes-gcm = "0.10"                                  # AES-GCM authenticated encryption.
+argon2 = "0.5"                                    # Argon2 password hashing/key derivation.
+rand = "0.8"                                      # Random number generation for salts/nonces.
+zeroize = { version = "1.7", features = ["zeroize_derive"] } # Securely clears sensitive data from memory.
+tempfile = "3.6"                                  # Helper for creating temporary files and directories.
 
 # The `[dev-dependencies]` section lists crates used only for development and testing.
 # These are not included in the final binary.

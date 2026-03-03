@@ -20,7 +20,7 @@ env_logger = "0.11"                               # Logging implementation.
 log = "0.4"                                       # Logging facade.
 aes-gcm = "0.10"                                  # AES-GCM authenticated encryption.
 argon2 = "0.5"                                    # Argon2 password hashing/key derivation.
-rand = "0.8"                                      # Random number generation for salts/nonces.
+rand = "0.10"                                      # Random number generation for salts/nonces.
 zeroize = { version = "1.7", features = ["zeroize_derive"] } # Securely clears sensitive data from memory.
 tempfile = "3.6"                                  # Helper for creating temporary files and directories.
 
